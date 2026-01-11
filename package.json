@@ -1,0 +1,57 @@
+{
+  "name": "teplica-control",
+  "version": "1.0.0",
+  "description": "Система управления теплицей через десктопное приложение",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never"
+  },
+  "keywords": [
+    "greenhouse",
+    "automation",
+    "arduino",
+    "electron",
+    "desktop"
+  ],
+  "author": "powered by kiparis-",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^22.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "serialport": "^10.5.0",
+    "@serialport/parser-readline": "^10.5.0"
+  },
+  "build": {
+    "appId": "com.kiparis.teplica",
+    "productName": "Управление теплицей",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "templates/**/*",
+      "static/**/*",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["x64"]
+    },
+    "win": {
+      "target": ["x64"],
+      "category": "public.app-category.utilities"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Utility"
+    }
+  }
+}
