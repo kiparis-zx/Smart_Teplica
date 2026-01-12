@@ -9,19 +9,16 @@ const server = http.createServer(app);
 const io = socketIo(server);
 const isElectron = process.versions && process.versions.electron;
 
-// Настройка COM порта (измените на ваш порт)
 const port = new SerialPort({
-    path: 'COM3', // Измените на ваш COM порт
+    path: 'COM3',
     baudRate: 9600
 });
 
 const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
 
-// Обслуживание статических файлов
 app.use('/static', express.static('static'));
 app.use(express.json());
 
-// Главная страница
 app.get('/', (req, res) => {
     if (isElectron) {
         res.sendFile(__dirname + '/templates/index.html');
@@ -30,7 +27,6 @@ app.get('/', (req, res) => {
     }
 });
 
-// Данные с датчиков
 let sensorData = {
     humidity: 0,
     light: 0,
@@ -41,75 +37,61 @@ let sensorData = {
     mode: 'auto'
 };
 
-// Парсинг данных с Arduino
 parser.on('data', (data) => {
     console.log('Arduino:', data);
     
-    // Парсинг влажности почвы
     if (data.includes('Влажность почвы:')) {
         const match = data.match(/Влажность почвы: (\d+\.?\d*)%/);
         if (match) sensorData.humidity = parseFloat(match[1]);
     }
     
-    // Парсинг освещенности
     if (data.includes('Освещенность:')) {
         const match = data.match(/Освещенность: (\d+)/);
         if (match) sensorData.light = parseInt(match[1]);
     }
     
-    // Парсинг температуры
     if (data.includes('Температура:')) {
         const match = data.match(/Температура: (\d+\.?\d*)/);
         if (match) sensorData.temperature = parseFloat(match[1]);
     }
     
-    // Парсинг состояния насоса
     if (data.includes('Насос ВКЛЮЧЕН')) {
         sensorData.pumpStatus = 'on';
     } else if (data.includes('Насос ВЫКЛЮЧЕН')) {
         sensorData.pumpStatus = 'off';
     }
     
-    // Парсинг состояния светодиода
     if (data.includes('Светодиод ВКЛЮЧЕН')) {
         sensorData.ledStatus = 'on';
     } else if (data.includes('Светодиод ВЫКЛЮЧЕН')) {
         sensorData.ledStatus = 'off';
     }
     
-    // Парсинг режима работы
     if (data.includes('Режим: Автоматический')) {
         sensorData.mode = 'auto';
     } else if (data.includes('Режим: Ручной')) {
         sensorData.mode = 'manual';
     }
     
-    // Отправка данных на веб-интерфейс
     io.emit('sensorData', sensorData);
 });
 
-// Обработка команд от веб-интерфейса
 io.on('connection', (socket) => {
     console.log('Пользователь подключен');
     
-    // Отправка текущих данных при подключении
     socket.emit('sensorData', sensorData);
     
-    // Обработка команд
     socket.on('command', (command) => {
         console.log('Команда:', command);
         
-        // Проверка на команду выключения сервера
         if (command === 'shutdown') {
             console.log('Выключение сервера...');
             socket.emit('serverStatus', { status: 'shutting_down', message: 'Сервер выключается...' });
             
-            // Закрываем соединение с Arduino
             port.close(() => {
                 console.log('Соединение с Arduino закрыто');
             });
             
-            // Если запущено в Electron, закрываем приложение
             if (isElectron) {
                 setTimeout(() => {
                     if (process.electron) {
@@ -119,7 +101,6 @@ io.on('connection', (socket) => {
                     }
                 }, 1000);
             } else {
-                // Выключаем сервер через 1 секунду
                 setTimeout(() => {
                     process.exit(0);
                 }, 1000);
@@ -176,4 +157,5 @@ if (isElectron) {
 // Обработка ошибок порта
 port.on('error', (err) => {
     console.error('Ошибка Serial Port:', err.message);
+
 });
